@@ -14,7 +14,6 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
 import imgscalr.Scalr;
@@ -24,35 +23,27 @@ class GamePanel extends JPanel{
 	static final byte CROSS = 1;
 	static final byte NAUGHT = -1;
 	
-	private byte[][] tab;
-		byte[][] getTab(){
-			return tab;
-		}
-	private Tile[][] tiles;	
-	
-	private boolean turnIndicator = true;
-		void setTurnIndicator(boolean turnIndicator){
-			this.turnIndicator = turnIndicator;
-		}
-		boolean getTurnIndicator() {
-			return turnIndicator;
+	private Tile[][] tiles;
+		Tile[][] getTilesArray() {
+			return tiles;
 		}
 		
-	private static final Operator OPERATOR = new Operator(3, 3, 3, null);	
+	private final Operator OPERATOR;	
 	
-	GamePanel(int size_rows, int size_columns, int seriesLength){
+	GamePanel(Operator operator){
+		int[] settings = operator.getSettings();
+		int size_rows = settings[0];
+		int size_columns = settings[1];
+		
 		setLayout(new GridLayout(size_rows, size_columns));
 		
-		tab = new byte[size_rows][size_columns];
 		tiles = new Tile[size_rows][size_columns];
 		
 		for(int it = 0; it < size_rows; ++it)
-			for(int itt = 0; itt < size_columns; ++itt) {
-				tiles[it][itt] = (Tile) add(new Tile(it, itt, this));
-				tab[it][itt] = 0;
-			}
+			for(int itt = 0; itt < size_columns; ++itt) 
+				tiles[it][itt] = (Tile) add(new Tile(this));
 		
-		OPERATOR.setProperties(size_rows, size_columns, seriesLength, this);
+		OPERATOR = operator;
 		
 		Tile.getImages();
 		
@@ -60,47 +51,39 @@ class GamePanel extends JPanel{
 	}
 	
 	void placeANaught(short row, short column) {
-		tab[row][column] = NAUGHT;
+		try{
+			tiles[row][column].setValue(NAUGHT);
+		}catch(IndexOutOfBoundsException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 	}
 	
-	void updateGraphicalTiles() {
-		for(int row = 0; row < tiles.length; ++row)
-			for(int column = 0; column < tiles[0].length; ++column) {
-				tiles[row][column].setValue(tab[row][column]);
-			}
+	void placeACross(int row, int column) {
+		try{
+			tiles[row][column].setValue(CROSS);
+		}catch(IndexOutOfBoundsException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 	}
 	
-	private static class Tile extends JPanel{
+	static class Tile extends JPanel{
 		private static final long serialVersionUID = 1L;
-		private final static Border border = BorderFactory.createEtchedBorder(EtchedBorder.RAISED,
-				new Color(189, 210, 255), new Color(189, 210, 255));
-		
-		private float value = 0;
-		
+
 		private static BufferedImage imageX, image0;
 		private static BufferedImage imageXResized, image0Resized;
-	
-		private Dimension dimension;
 		
-		private static void getImages() {
-			//preparing images for x and 0
-			BufferedImage imageXBuff = null, image0Buff = null;
-			try {
-				imageXBuff = ImageIO.read(GamePanel.class.getResourceAsStream("x(8).png"));
-				image0Buff = ImageIO.read(GamePanel.class.getResourceAsStream("naught(6).jpg"));
-			}catch(IOException e) {
-				e.printStackTrace();
-				System.exit(0);
+		private byte value = 0;
+			void setValue(byte value) {
+				if(value == NAUGHT || value == CROSS)
+					this.value = value;
+				this.repaint();
 			}
-			imageX = imageXBuff;
-			image0 = image0Buff;
-		}
-		
-		private void setValue(int value) {
-			if(value == NAUGHT || value == CROSS)
-				this.value = value;
-			this.repaint();
-		}
+			
+			byte getValue() {
+				return this.value;
+			}
 		
 		@Override
 		public void paintComponent(Graphics g) {
@@ -119,21 +102,19 @@ class GamePanel extends JPanel{
 							null);
 		}
 		
-		Tile(int row, int column, GamePanel gamePanel) {
+		Tile(GamePanel gamePanel) {
 			
 			this.setSize(100, 100);
 			
-			setBorder(border);
+			setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED,
+					new Color(189, 210, 255), new Color(189, 210, 255)));
 			
 			setBackground(new Color(158, 198, 255));
 			
-			dimension = this.getSize();
-			
 			addComponentListener(new ComponentListener() {
-
 				@Override
 				public void componentResized(ComponentEvent e) {
-					dimension = Tile.this.getSize();
+					Dimension dimension = Tile.this.getSize();
 					imageXResized = Scalr.resize(imageX,
 							dimension.width,
 							dimension.height,
@@ -144,53 +125,38 @@ class GamePanel extends JPanel{
 							null);
 				}
 
-				@Override
-				public void componentMoved(ComponentEvent e) {
-				}
-
-				@Override
-				public void componentShown(ComponentEvent e) {
-				}
-
-				@Override
-				public void componentHidden(ComponentEvent e) {
-				}
+				@Override public void componentMoved(ComponentEvent e) {}
+				@Override public void componentShown(ComponentEvent e) {}
+				@Override public void componentHidden(ComponentEvent e) {}
 			});
 		
 			addMouseListener(new MouseListener() {
 				@Override
-				public void mouseClicked(MouseEvent e) {
-					
-				}
-
-				@Override
-				public void mousePressed(MouseEvent e) {
-					
-				}
-
-				@Override
 				public void mouseReleased(MouseEvent e) {
 					Tile tile = Tile.this;
 					if(tile.value == 0) 
-						if(gamePanel.turnIndicator) {
-							gamePanel.turnIndicator = false;
-							gamePanel.tab[row][column] = CROSS;
-							gamePanel.updateGraphicalTiles();
-							OPERATOR.naughtsMove();
-							gamePanel.updateGraphicalTiles();
-						}
+						gamePanel.OPERATOR.playerWantsToMakeAMove(gamePanel.tiles, gamePanel, Tile.this);
 				}
-
-				@Override
-				public void mouseEntered(MouseEvent e) {
-					
-				}
-
-				@Override
-				public void mouseExited(MouseEvent e) {
-					
-				}
+				
+				@Override public void mouseClicked(MouseEvent e) {}
+				@Override public void mousePressed(MouseEvent e) {}
+				@Override public void mouseEntered(MouseEvent e) {}
+				@Override public void mouseExited(MouseEvent e) {}
 			});
+		}
+		
+		private static void getImages() {
+			//preparing images for x and 0
+			BufferedImage imageXBuff = null, image0Buff = null;
+			try {
+				imageXBuff = ImageIO.read(GamePanel.class.getResourceAsStream("x(8).png"));
+				image0Buff = ImageIO.read(GamePanel.class.getResourceAsStream("naught(6).jpg"));
+			}catch(IOException e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
+			imageX = imageXBuff;
+			image0 = image0Buff;
 		}
 	}
 }

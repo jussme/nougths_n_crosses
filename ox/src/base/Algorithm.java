@@ -3,6 +3,13 @@ package base;
 import static base.GamePanel.CROSS;
 import static base.GamePanel.NAUGHT;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 public class Algorithm {
 	/*
 	 * 10 ->
@@ -15,108 +22,130 @@ public class Algorithm {
 	 * 1-1 /
 	 *
 	*/
-	/*An array of vectors for checking win conditions;
-	arranged so that -vectors[i] == vectors[7 - i] == vectors[vectors.length - 1 - i] ,
+	/*An array[8] of vectors for checking win conditions;
+	arranged so that -vectors[i] == vectors[7 - i] == vectors[vectors.length - 1 - i],
 	in other words - it's symmetrical*/
 	private final static int[][] vectors = {
 		{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}
 	};
 	
 	//boards X size
-	private int size_rows;
+	private final int size_rows;
 		
 	//boards Y size
-	private int size_columns;
+	private final int size_columns;
 	
-	private int seriesLength;
+	//how many hits in a line are a win condition
+	private final int seriesLength;
+
+	private final int maxBranchCount;
 	
+	private final int threadCount;
 	
-	/**Setting boards properties.
-	 * <p>
-	 * @param seriesLength is the required amount of consecutive characters for a win;<br>
-	 *  <= 3 && <= boardX && <= boardY
-	 * @param boardX horizontal size of the board; min 3
-	 * @param boardY vertical size of the board; min 3
-	 * @return true if the properties have been successfully set, false otherwise
-	 * </p>
-	 */
-	boolean setProperties(int seriesLength, int size_rows, int size_columns) {
-		if(seriesLength > size_rows || seriesLength > size_columns || seriesLength < 3
-				|| size_rows < 3 || size_columns < 3)
-			return false;
-		
+	private final int depth;
+	
+	Algorithm(int size_rows, int size_columns, int seriesLength,
+			int threadCount, int depth){
 		this.size_rows = size_rows;
 		this.size_columns = size_columns;
 		this.seriesLength = seriesLength;
+		this.threadCount = threadCount;
+		this.depth = depth;
 		
-		return true;
-	}
-	
-	Algorithm(int seriesLength, int boardX, int boardY){
-		setProperties(seriesLength, boardX, boardY);
+		maxBranchCount = size_rows * size_columns - 1;
 	}
 	
 	short[] getOptimalMove(byte[][] tab) {
-		float bestSoFar_WinCount = -32768, buff;
-		short[] bestSoFar_Coords = {(short) (size_rows + 1), (short) (size_columns + 1)};
-		for(short it = 0; it < size_rows; ++it)
-			for(short itt = 0; itt < size_columns; ++itt) {
-				if(tab[it][itt] == 0) {
-					byte[][] tabClone0 = copy(tab, size_rows, size_columns);
-					tabClone0[it][itt] = NAUGHT;
-					
-					if((buff = appraiseABoard_0(tabClone0)) > bestSoFar_WinCount) {
-						bestSoFar_WinCount = buff;
-						bestSoFar_Coords[0] = it;
-						bestSoFar_Coords[1] = itt;
-					}
-					System.gc();
-				}
-			}
+		//TODO
+		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+		List<Future<Float[]>> futureList = new ArrayList<>();
 		
-		return bestSoFar_Coords;
+		//multithreading searching for the best move
+		for(short row = 0; row < size_rows; ++row)
+			for(short column = 0; column < size_columns; ++column)
+				if(tab[row][column] == 0)
+				{
+					byte[][] tabClone0 = copy(tab, size_rows, size_columns);
+					tabClone0[row][column] = NAUGHT;
+					
+					Float final_row = (float) row, final_column = (float) column;
+					
+					futureList.add(executorService.submit(() -> {
+						float buff = appraiseABoard(tabClone0, depth);
+						
+						Float[] array = {buff, final_row, final_column};
+						
+						System.gc();
+						
+						return array;
+					}));
+				}
+		
+		//picking the best move based on scores(results[0])
+		float bestSoFar_Count = -131072;
+		short[] bestSoFar_Coords = {-1, -1};
+		for(Future<Float[]> future : futureList) {
+			try {
+				Float[] results = future.get();
+				if(results[0] > bestSoFar_Count) {
+					bestSoFar_Count = results[0];
+					bestSoFar_Coords[0] = results[1].shortValue();
+					bestSoFar_Coords[1] = results[2].shortValue();
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		if(bestSoFar_Coords[0] < 0)
+			return null;
+		else
+			return bestSoFar_Coords;
 	}
 	
-	private float appraiseABoard_0(byte[][] tab) {
-		float amountOfX = 0;
-		for(byte[] tab1D : tab)
-			for(byte cell : tab1D)
-				if(cell == 1)
-					++amountOfX;
+	private float appraiseABoard(byte[][] tab, float depth) {
 		
-		int scaleFactor = size_rows * size_columns - 1;
+		int currentBranchCount = 0; 
+		for(byte[] array1D : tab)
+			for(byte cell : array1D)
+				if(cell == 0)
+					++currentBranchCount;
+		++currentBranchCount;//one branch is already projected - the current one
 		
 		if(checkIfDraw(tab)) {
-			return 1/((float)Math.pow(scaleFactor, amountOfX));
+			return 1/getFactorialRatio(currentBranchCount);
 		}
 		if(checkIfWon(tab, NAUGHT)) {
-			return 2/((float)Math.pow(scaleFactor, amountOfX));
+			return 2/getFactorialRatio(currentBranchCount);
 		}
 		if(checkIfWon(tab, CROSS)) {
-			return -4/((float)Math.pow(scaleFactor, amountOfX));
+			return -3/getFactorialRatio(currentBranchCount);
 		}
-		
-		float allBoardsScore = 0;
-		
+		if(--depth == 0)
+			return 0;
 		
 		short sum = 0;
 		byte projection;
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
 				sum += cell;
-		//cross's turn?(will be projected(by iterating possibillities))
+		//who's move to project?
 		projection = (sum == 0)? CROSS : NAUGHT;
+
+		float allUnderlyingBoardsScore = 0;
 		
-		for(short it = 0; it < size_rows; ++it)
-			for(short itt = 0; itt < size_columns; ++itt) {
+		for(short row = 0; row < size_rows; ++row)
+			for(short column = 0; column < size_columns; ++column) {
 				byte[][] tabClone = copy(tab, size_rows, size_columns);
-				if(tabClone[it][itt] == 0) {
-					tabClone[it][itt] = projection;
-					allBoardsScore += appraiseABoard_0(tabClone);
+				if(tabClone[row][column] == 0) {
+					tabClone[row][column] = projection;
+					allUnderlyingBoardsScore += appraiseABoard(tabClone, depth);
 				}
 			}
 		
-		return allBoardsScore;
+		return allUnderlyingBoardsScore;
 	}
 	
 	private boolean checkIfDraw(byte[][] tab) {
@@ -137,7 +166,8 @@ public class Algorithm {
 					{
 						if(checkLine(tab, row, column,
 							vectors[vectorPair][0],
-							vectors[vectorPair][1], value))
+							vectors[vectorPair][1],
+							value))
 						{
 							return true;
 						}else {
@@ -168,6 +198,7 @@ public class Algorithm {
 			return true;
 		}catch(ArrayIndexOutOfBoundsException e) {
 			e.printStackTrace();
+			System.exit(1);
 			return false;
 		}
 	}
@@ -190,5 +221,18 @@ public class Algorithm {
 					contains = true;
 		
 		return contains;
+	}
+	
+	/**
+	 * 
+	 * @param number number of current parallel branches
+	 * @return maxBranchCount! / currentBranchCount!
+	 */
+	private float getFactorialRatio(int number) {
+		float result = maxBranchCount;
+		for(int it = maxBranchCount - 1; it > number; --it) {
+			result *= it;
+		}
+		return result;
 	}
 }
