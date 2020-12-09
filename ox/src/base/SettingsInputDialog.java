@@ -28,7 +28,7 @@ class SettingsInputDialog extends JFrame{
 	private static final Border BORDER_C = BorderFactory.createTitledBorder(BORDER, "Columns >= 3");
 	private static final Border BORDER_S = BorderFactory.createTitledBorder(BORDER, "S <= 3 && <= R && <= C");
 	private static final Border BORDER_T = BorderFactory.createTitledBorder(BORDER, "Number of threads");
-	private static final Border BORDER_D = BorderFactory.createTitledBorder(BORDER, "Recursion depth");
+	private static final Border BORDER_D = BorderFactory.createTitledBorder(BORDER, "Recursion depth(n/2 + 1 enemy moves)");
 	
 	private static final Color ERROR_COLOR = new Color(255, 61, 61);
 

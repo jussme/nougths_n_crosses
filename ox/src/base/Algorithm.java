@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class Algorithm {
-	/*
+	/* checkIfWon method implementation
 	 * 10 ->
 	 * 11 \
 	 * 01 |
@@ -38,7 +38,8 @@ public class Algorithm {
 	//how many hits in a line are a win condition
 	private final int seriesLength;
 
-	private final int maxBranchCount;
+	//the most edges the alg. will spawn, on one level - the first ai's move.
+	private final int maxEdgeCount;
 	
 	private final int threadCount;
 	
@@ -52,25 +53,28 @@ public class Algorithm {
 		this.threadCount = threadCount;
 		this.depth = depth;
 		
-		maxBranchCount = size_rows * size_columns - 1;
+		maxEdgeCount = size_rows * size_columns - 1;
 	}
 	
-	short[] getOptimalMove(byte[][] tab) {
-		//TODO
+	int[] getOptimalMove(byte[][] tab) {
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
 		List<Future<Float[]>> futureList = new ArrayList<>();
 		
-		//multithreading searching for the best move
+		//multithreaded search for the best move
 		for(short row = 0; row < size_rows; ++row)
 			for(short column = 0; column < size_columns; ++column)
+				//if(cell empty)
 				if(tab[row][column] == 0)
 				{
+					//make new edge
 					byte[][] tabClone0 = copy(tab, size_rows, size_columns);
+					//define node
 					tabClone0[row][column] = NAUGHT;
 					
 					Float final_row = (float) row, final_column = (float) column;
 					
 					futureList.add(executorService.submit(() -> {
+						//get a float score for the node
 						float buff = appraiseABoard(tabClone0, depth);
 						
 						Float[] array = {buff, final_row, final_column};
@@ -82,15 +86,15 @@ public class Algorithm {
 				}
 		
 		//picking the best move based on scores(results[0])
-		float bestSoFar_Count = -131072;
-		short[] bestSoFar_Coords = {-1, -1};
+		float bestSoFar_Score = -1 * 2^128;
+		int[] bestSoFar_Coords = {-1, -1};
 		for(Future<Float[]> future : futureList) {
 			try {
 				Float[] results = future.get();
-				if(results[0] > bestSoFar_Count) {
-					bestSoFar_Count = results[0];
-					bestSoFar_Coords[0] = results[1].shortValue();
-					bestSoFar_Coords[1] = results[2].shortValue();
+				if(results[0] > bestSoFar_Score) {
+					bestSoFar_Score = results[0];
+					bestSoFar_Coords[0] = results[1].intValue();
+					bestSoFar_Coords[1] = results[2].intValue();
 				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -99,7 +103,8 @@ public class Algorithm {
 			}
 		}
 		
-		if(bestSoFar_Coords[0] < 0)
+		//check whether any one score calculation succeeded.
+		if(bestSoFar_Coords[0] == -1)
 			return null;
 		else
 			return bestSoFar_Coords;
@@ -126,7 +131,8 @@ public class Algorithm {
 		if(--depth == 0)
 			return 0;
 		
-		short sum = 0;
+		//counting moves
+		int sum = 0;
 		byte projection;
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
@@ -156,7 +162,7 @@ public class Algorithm {
 	
 	
 	boolean checkIfWon(byte[][]tab, int value) {
-		//default value is false, which answers "was checked?"
+		//default value is false, which answers "was this line checked?"
 		boolean[][][] checkArray = new boolean[size_rows][size_columns][8];
 		
 		for(int row = 0; row < size_rows; ++row)
@@ -171,12 +177,13 @@ public class Algorithm {
 						{
 							return true;
 						}else {
+							//set the other end of the vector as checked
 							try {
 								checkArray[row + (seriesLength - 1) * vectors[vectorPair][0]]
 										[column + (seriesLength - 1) * vectors[vectorPair][1]][7 - vectorPair]
 												= true;
 							}catch(ArrayIndexOutOfBoundsException e) {
-								//nuffin
+								//when checkLine() was checking "beyond the board"
 							}
 						}
 					}
@@ -184,11 +191,11 @@ public class Algorithm {
 	}
 	
 	private boolean checkLine(byte[][] tab, int x, int y,
-			int vectorRow, int vectorCol, int value) {
+			int vectorX, int vectorY, int value) {
 		try{
 			for (int it = 0; it < seriesLength; ++it) {
 				try{
-					if(tab[x + it * vectorRow][y + it * vectorCol] != value)
+					if(tab[x + it * vectorX][y + it * vectorY] != value)
 						return false;
 				}catch(ArrayIndexOutOfBoundsException e) {
 					return false;
@@ -214,13 +221,12 @@ public class Algorithm {
 	}
 	
 	boolean arrayContains(byte[][] tab, int value) {
-		boolean contains = false;
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
 				if(cell == value)
-					contains = true;
+					return true;
 		
-		return contains;
+		return false;
 	}
 	
 	/**
@@ -229,8 +235,8 @@ public class Algorithm {
 	 * @return maxBranchCount! / currentBranchCount!
 	 */
 	private float getFactorialRatio(int number) {
-		float result = maxBranchCount;
-		for(int it = maxBranchCount - 1; it > number; --it) {
+		float result = maxEdgeCount;
+		for(int it = maxEdgeCount - 1; it > number; --it) {
 			result *= it;
 		}
 		return result;

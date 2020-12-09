@@ -80,7 +80,7 @@ class Operator {
 			System.exit(0);
 		}
 		
-		short[] naughtsCoords = algorithm.getOptimalMove(byteArray);
+		int[] naughtsCoords = algorithm.getOptimalMove(byteArray);
 		
 		//if the algorithm fails, it returns a null
 		if(naughtsCoords != null) {

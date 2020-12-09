@@ -50,7 +50,7 @@ class GamePanel extends JPanel{
 		setBackground(new Color(158, 198, 255));
 	}
 	
-	void placeANaught(short row, short column) {
+	void placeANaught(int row, int column) {
 		try{
 			tiles[row][column].setValue(NAUGHT);
 		}catch(IndexOutOfBoundsException e) {
