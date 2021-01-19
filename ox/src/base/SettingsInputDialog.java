@@ -26,13 +26,13 @@ class SettingsInputDialog extends JFrame{
 	private static final Border BORDER = BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
 	private static final Border BORDER_R = BorderFactory.createTitledBorder(BORDER, "Rows >= 3");
 	private static final Border BORDER_C = BorderFactory.createTitledBorder(BORDER, "Columns >= 3");
-	private static final Border BORDER_S = BorderFactory.createTitledBorder(BORDER, "S <= 3 && <= R && <= C");
+	private static final Border BORDER_S = BorderFactory.createTitledBorder(BORDER, "WinSeries <= 3 && <= R && <= C");
 	private static final Border BORDER_T = BorderFactory.createTitledBorder(BORDER, "Number of threads");
 	private static final Border BORDER_D = BorderFactory.createTitledBorder(BORDER, "Recursion depth(n/2 + 1 enemy moves)");
 	
 	private static final Color ERROR_COLOR = new Color(255, 61, 61);
 
-	private static final int TXT_FIELD_SIZE_X = 240;
+	private static final int TXT_FIELD_SIZE_X = 280;
 	private static final int TXT_FIELD_SIZE_y = 60;
 	
 	private static final float FONT_SIZE = 30f;

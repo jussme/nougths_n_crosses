@@ -45,8 +45,7 @@ public class Algorithm {
 	
 	private final int depth;
 	
-	Algorithm(int size_rows, int size_columns, int seriesLength,
-			int threadCount, int depth){
+	public Algorithm(int size_rows, int size_columns, int seriesLength, int threadCount, int depth){
 		this.size_rows = size_rows;
 		this.size_columns = size_columns;
 		this.seriesLength = seriesLength;
@@ -56,7 +55,7 @@ public class Algorithm {
 		maxEdgeCount = size_rows * size_columns - 1;
 	}
 	
-	int[] getOptimalMove(byte[][] tab) {
+	public int[] getOptimalMove(byte[][] tab) {
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
 		List<Future<Float[]>> futureList = new ArrayList<>();
 		
@@ -112,7 +111,7 @@ public class Algorithm {
 	
 	private float appraiseABoard(byte[][] tab, float depth) {
 		
-		int currentBranchCount = 0; 
+		short currentBranchCount = 0; 
 		for(byte[] array1D : tab)
 			for(byte cell : array1D)
 				if(cell == 0)
@@ -132,7 +131,7 @@ public class Algorithm {
 			return 0;
 		
 		//counting moves
-		int sum = 0;
+		short sum = 0;
 		byte projection;
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
@@ -161,9 +160,10 @@ public class Algorithm {
 	}
 	
 	
-	boolean checkIfWon(byte[][]tab, int value) {
+	public boolean checkIfWon(byte[][]tab, int value) {
 		//default value is false, which answers "was this line checked?"
 		boolean[][][] checkArray = new boolean[size_rows][size_columns][8];
+		short calculatedRow, calculatedColumn;
 		
 		for(int row = 0; row < size_rows; ++row)
 			for(int column = 0; column < size_columns; ++column)
@@ -178,21 +178,17 @@ public class Algorithm {
 							return true;
 						}else {
 							//set the other end of the vector as checked
-							try {
-								checkArray[row + (seriesLength - 1) * vectors[vectorPair][0]]
-										[column + (seriesLength - 1) * vectors[vectorPair][1]][7 - vectorPair]
-												= true;
-							}catch(ArrayIndexOutOfBoundsException e) {
-								//when checkLine() was checking "beyond the board"
-							}
+							calculatedRow = (short) (row + (seriesLength - 1) * vectors[vectorPair][0]);
+							calculatedColumn = (short) (column + (seriesLength - 1) * vectors[vectorPair][1]);
+							if(calculatedRow < size_rows &&  calculatedRow >= 0 && calculatedColumn < size_columns && calculatedColumn >=0)
+								checkArray[calculatedRow]
+										[calculatedColumn][7 - vectorPair] = true;
 						}
 					}
 		return false;
 	}
 	
-	private boolean checkLine(byte[][] tab, int x, int y,
-			int vectorX, int vectorY, int value) {
-		try{
+	private boolean checkLine(byte[][] tab, int x, int y, int vectorX, int vectorY, int value) {
 			for (int it = 0; it < seriesLength; ++it) {
 				try{
 					if(tab[x + it * vectorX][y + it * vectorY] != value)
@@ -203,11 +199,6 @@ public class Algorithm {
 			}
 			
 			return true;
-		}catch(ArrayIndexOutOfBoundsException e) {
-			e.printStackTrace();
-			System.exit(1);
-			return false;
-		}
 	}
  	
 	private byte[][] copy(byte[][] tab, int count_rows, int count_columns){
