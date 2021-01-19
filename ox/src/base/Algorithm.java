@@ -154,9 +154,7 @@ public class Algorithm {
 	}
 	
 	private boolean checkIfDraw(byte[][] tab) {
-		return !arrayContains(tab, 0)
-				&& !checkIfWon(tab, NAUGHT)
-				&& !checkIfWon(tab, CROSS);
+		return boardArrayIsFull(tab) && !checkIfWon(tab, NAUGHT);
 	}
 	
 	
@@ -189,11 +187,12 @@ public class Algorithm {
 	}
 	
 	private boolean checkLine(byte[][] tab, int x, int y, int vectorX, int vectorY, int value) {
+			int calculatedRow, calculatedColumn;
 			for (int it = 0; it < seriesLength; ++it) {
-				try{
-					if(tab[x + it * vectorX][y + it * vectorY] != value)
-						return false;
-				}catch(ArrayIndexOutOfBoundsException e) {
+				calculatedRow = x + it * vectorX;
+				calculatedColumn = y + it * vectorY;
+				if(calculatedRow >= 0 && calculatedRow < size_rows && calculatedColumn >= 0 && calculatedColumn < size_columns ||
+						tab[calculatedRow][calculatedColumn] != value) {
 					return false;
 				}
 			}
@@ -211,13 +210,13 @@ public class Algorithm {
 		return returnTab;
 	}
 	
-	boolean arrayContains(byte[][] tab, int value) {
+	public boolean boardArrayIsFull(byte[][] tab) {
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
-				if(cell == value)
-					return true;
+				if(cell != 0)
+					return false;
 		
-		return false;
+		return true;
 	}
 	
 	/**

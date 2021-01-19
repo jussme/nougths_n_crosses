@@ -63,6 +63,11 @@ class Operator {
 						JOptionPane.WARNING_MESSAGE);
 				System.exit(0);
 			}
+			//board is full
+			if(algorithm.boardArrayIsFull(byteArray)) {
+				JOptionPane.showMessageDialog(null, "Draw");
+				System.exit(0);
+			}
 			
 			new Thread(() -> {//should be ok, no race conditions?
 				performNaughtsMove(byteArray, gamePanel);
@@ -73,12 +78,6 @@ class Operator {
 	
 	//the meat
 	private void performNaughtsMove(byte[][] byteArray, GamePanel gamePanel) {
-		
-		//board is full
-		if(!algorithm.arrayContains(byteArray, 0)) {
-			JOptionPane.showMessageDialog(null, "Draw");
-			System.exit(0);
-		}
 		
 		int[] naughtsCoords = algorithm.getOptimalMove(byteArray);
 		
@@ -105,7 +104,7 @@ class Operator {
 			System.exit(0);
 		}else
 			//board is full
-			if(!algorithm.arrayContains(byteArray, 0)) {
+			if(algorithm.boardArrayIsFull(byteArray)) {
 				JOptionPane.showMessageDialog(null, "Draw");
 				System.exit(0);
 			}
