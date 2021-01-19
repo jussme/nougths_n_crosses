@@ -102,7 +102,7 @@ public class Algorithm {
 			}
 		}
 		
-		//check whether any one score calculation succeeded.
+		//check whether any one board's score calculation succeeded.
 		if(bestSoFar_Coords[0] == -1)
 			return null;
 		else
@@ -160,13 +160,13 @@ public class Algorithm {
 	
 	public boolean checkIfWon(byte[][]tab, int value) {
 		//default value is false, which answers "was this line checked?"
-		boolean[][][] checkArray = new boolean[size_rows][size_columns][8];
+		//boolean[][][] checkArray = new boolean[size_rows][size_columns][8];
 		short calculatedRow, calculatedColumn;
 		
 		for(int row = 0; row < size_rows; ++row)
 			for(int column = 0; column < size_columns; ++column)
 				for(int vectorPair = 0; vectorPair < 8; ++vectorPair)
-					if(!checkArray[row][column][vectorPair]) 
+					//if(!checkArray[row][column][vectorPair]) 
 					{
 						if(checkLine(tab, row, column,
 							vectors[vectorPair][0],
@@ -174,14 +174,14 @@ public class Algorithm {
 							value))
 						{
 							return true;
-						}else {
-							//set the other end of the vector as checked
-							calculatedRow = (short) (row + (seriesLength - 1) * vectors[vectorPair][0]);
-							calculatedColumn = (short) (column + (seriesLength - 1) * vectors[vectorPair][1]);
-							if(calculatedRow < size_rows &&  calculatedRow >= 0 && calculatedColumn < size_columns && calculatedColumn >=0)
-								checkArray[calculatedRow]
-										[calculatedColumn][7 - vectorPair] = true;
-						}
+						}//else { i dont know how big a seriesLength would make it efficient
+						//	//set the other end of the vector as checked
+						//	calculatedRow = (short) (row + (seriesLength - 1) * vectors[vectorPair][0]);
+						//	calculatedColumn = (short) (column + (seriesLength - 1) * vectors[vectorPair][1]);
+						//	if(calculatedRow < size_rows &&  calculatedRow >= 0 && calculatedColumn < size_columns && calculatedColumn >=0)
+						//		checkArray[calculatedRow]
+						//				[calculatedColumn][7 - vectorPair] = true;
+						//}
 					}
 		return false;
 	}
@@ -191,7 +191,7 @@ public class Algorithm {
 			for (int it = 0; it < seriesLength; ++it) {
 				calculatedRow = x + it * vectorX;
 				calculatedColumn = y + it * vectorY;
-				if(calculatedRow >= 0 && calculatedRow < size_rows && calculatedColumn >= 0 && calculatedColumn < size_columns ||
+				if(calculatedRow < 0 || calculatedRow >= size_rows || calculatedColumn < 0 || calculatedColumn >= size_columns ||
 						tab[calculatedRow][calculatedColumn] != value) {
 					return false;
 				}
@@ -213,7 +213,7 @@ public class Algorithm {
 	public boolean boardArrayIsFull(byte[][] tab) {
 		for(byte[] tab1D : tab)
 			for(byte cell : tab1D)
-				if(cell != 0)
+				if(cell == 0)
 					return false;
 		
 		return true;

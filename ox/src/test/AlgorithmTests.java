@@ -8,7 +8,8 @@ import org.junit.Test;
 import base.Algorithm;
 
 public class AlgorithmTests {
-    @Test public void test() {
+     @Test 
+     public void testGetOptimalMove() {
         Algorithm testAlgorithm = new Algorithm(4, 4, 4, 4, 6);
         byte[][] testTab = {
         		{1, 0, 0, 0},
@@ -18,7 +19,7 @@ public class AlgorithmTests {
         	};
         
         long endTime;
-        int numberOfRuns = 10;
+        int numberOfRuns = 100;
         long[] timeArray = new long[numberOfRuns];
         for(int it = 0; it<numberOfRuns; ++it) {
         	long startTime = System.nanoTime();
@@ -33,5 +34,15 @@ public class AlgorithmTests {
         }
         avgTime /= numberOfRuns;
         System.out.println("-----\ntime: "+avgTime/1000000000f + "\n-----");
+    }
+    
+    //@Test 
+    public void testAppraiseABoard() {
+    	byte[][] testTab = {
+        		{-1, -1, 1, -1},
+        		{-1, 1, 1, -1},
+        		{0, 1, 1, 0},
+        		{1, 0, 0, 0},
+        	};
     }
 }
